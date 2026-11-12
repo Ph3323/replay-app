@@ -22,7 +22,7 @@ jobs:
           echo "<h1>REPLAY Arena</h1><p>Sistema rodando!</p>" > static/index.html
       
       - name: Build
-        run: pyinstaller --onefile --add-data "static;static" --name ReplayArena server.py
+        run: pyinstaller --onefile --noconsole --add-data "static;static" --name ReplayArena server.py
       
       - name: Upload
         uses: actions/upload-artifact@v4
