@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os, re, json, time, glob, hmac, sqlite3, secrets, threading, subprocess, sys, requests
+"""REPLAY server: grava as câmeras, recebe o clique do botão, salva o replay"""
+import os, re, json, time, glob, hmac, sqlite3, secrets, threading, subprocess, sys, requests, webbrowser
 from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify, send_file, send_from_directory, abort
@@ -229,4 +230,10 @@ if __name__ == "__main__":
     for cid, cam in CFG.get("cameras", {}).items():
         threading.Thread(target=record, args=(cid, cam["rtsp"]), daemon=True).start()
     threading.Thread(target=cleaner, daemon=True).start()
+    
+    def open_browser():
+        time.sleep(4)
+        webbrowser.open("http://localhost:5000")
+    threading.Thread(target=open_browser, daemon=True).start()
+    
     app.run(host="0.0.0.0", port=CFG.get("port", 5000), threaded=True)
