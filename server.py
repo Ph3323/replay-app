@@ -5,10 +5,19 @@ from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify, send_file, send_from_directory, abort
 
+# --- CORREÇÃO PARA FUNCIONAR COMO .EXE ---
 if getattr(sys, 'frozen', False):
     BASE = os.path.dirname(sys.executable)
 else:
     BASE = os.path.dirname(os.path.abspath(__file__))
+
+# --- ESCONDER JANELAS DO FFMPEG NO WINDOWS ---
+if sys.platform == 'win32':
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
+else:
+    startupinfo = None
 
 BUF, OUT, DB = (os.path.join(BASE, x) for x in ("buffer", "replays", "replay.db"))
 CONFIG_PATH = os.path.join(BASE, "config.json")
@@ -76,7 +85,7 @@ def record(cid, rtsp):
             "-segment_time", str(SEG), "-segment_format", "mpegts", "-strftime", "1",
             "-reset_timestamps", "1", "-avoid_negative_ts", "make_zero",
             os.path.join(d, "%Y%m%d-%H%M%S.ts")
-        ])
+        ], startupinfo=startupinfo)
         print(f"[{cid}] câmera desconectada, tentando de novo em 5s")
         time.sleep(5)
 
@@ -102,7 +111,8 @@ def salvar(cid, t):
     lst = os.path.join(BUF, cid, f"{int(t)}.txt"); tmp = os.path.join(OUT, f"tmp-{cid}-{int(t)}.mp4")
     open(lst, "w").write("".join(f"file '{os.path.abspath(s)}'\n" for s in segs))
     r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-fflags", "+genpts", "-f", "concat", "-safe", "0", "-i", lst,
-                        "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-movflags", "+faststart", tmp])
+                        "-map", "0:v:0", "-map", "0:a:0?", "-c", "copy", "-movflags", "+faststart", tmp],
+                       startupinfo=startupinfo)
     os.remove(lst)
     if r.returncode or not os.path.exists(tmp):
         print(f"[{cid}] falha ao montar o replay")
@@ -206,6 +216,7 @@ def pwa(name):
     if name not in PWA: abort(404)
     return send_from_directory(os.path.join(BASE, "static"), name, mimetype=PWA[name])
 
+# --- VERIFICAÇÃO DE LICENÇA ---
 def check_license_loop():
     url = CFG.get("license_url", "").strip("/")
     key = CFG.get("license_key", "").strip()
@@ -217,9 +228,9 @@ def check_license_loop():
             r = requests.post(f"{url}/api/check", json={"key": key}, timeout=10)
             data = r.json()
             if data.get("active"):
-                print(f"[LICENÇA] ✅ OK - Arena: {data.get('name')}")
+                print(f"[LICENÇA] OK - Arena: {data.get('name')}")
             else:
-                print(f"[LICENÇA] ❌ BLOQUEADA! {data.get('message')}")
+                print(f"[LICENÇA] BLOQUEADA! {data.get('message')}")
         except Exception as e:
             print(f"[LICENÇA] Erro de conexão: {e}")
         time.sleep(3600)
