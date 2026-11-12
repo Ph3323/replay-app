@@ -22,6 +22,11 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
+    - name: Create dummy static folder
+      run: |
+        mkdir static
+        echo "<h1>REPLAY Arena</h1><p>Sistema rodando!</p>" > static/index.html
+    
     - name: Build .exe
       run: |
         pyinstaller --onefile --add-data "static;static" --name "ReplayArena" server.py
