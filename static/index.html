@@ -1,17 +1,189 @@
 <!DOCTYPE html>
-   <html lang="pt-BR">
-   <head>
-       <meta charset="utf-8">
-       <meta name="viewport" content="width=device-width, initial-scale=1">
-       <title>REPLAY Arena</title>
-       <style>
-           body { background: #060908; color: #39ff14; font-family: system-ui; padding: 20px; text-align: center; }
-           h1 { font-size: 28px; }
-           p { color: #80958b; }
-       </style>
-   </head>
-   <body>
-       <h1>REPLAY Arena</h1>
-       <p>Sistema rodando. Painel em desenvolvimento.</p>
-   </body>
-   </html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>REPLAY Arena</title>
+    <style>
+        :root { --bg: #060908; --card: #0d1311; --border: #1c2a25; --text: #e9f6ee; --muted: #80958b; --accent: #39ff14; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        h1 { color: var(--accent); font-size: 24px; }
+        .nav { display: flex; gap: 15px; }
+        .nav button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .nav button.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+        
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; }
+        .stat-card h3 { color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-card p { font-size: 24px; font-weight: bold; color: var(--accent); }
+
+        .section { display: none; }
+        .section.active { display: block; }
+        h2 { margin-bottom: 20px; color: var(--text); }
+
+        .courts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .court-card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; }
+        .court-card h3 { margin-bottom: 10px; }
+        .btn-record { background: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+        .btn-record:active { opacity: 0.7; }
+
+        .replays-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .replay-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .replay-card video { width: 100%; height: 180px; background: #000; object-fit: cover; }
+        .replay-info { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .replay-info span { color: var(--muted); font-size: 14px; }
+        .btn-delete { background: #ff3939; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+
+        .settings-form { max-width: 500px; background: var(--card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: var(--muted); margin-bottom: 5px; font-size: 14px; }
+        .form-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 6px; }
+        .btn-save { background: var(--accent); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>REPLAY Arena</h1>
+        <div class="nav">
+            <button class="active" onclick="showSection('home')">Início</button>
+            <button onclick="showSection('courts')">Quadras</button>
+            <button onclick="showSection('replays')">Replays</button>
+            <button onclick="showSection('settings')">Ajustes</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- HOME / DASHBOARD -->
+        <div id="home" class="section active">
+            <div class="stats">
+                <div class="stat-card"><h3>Replays Salvos</h3><p id="stat-total">0</p></div>
+                <div class="stat-card"><h3>Espaço Usado</h3><p id="stat-size">0 MB</p></div>
+                <div class="stat-card"><h3>Quadras Ativas</h3><p id="stat-courts">0</p></div>
+            </div>
+            <h2>Últimos Replays</h2>
+            <div id="recent-replays" class="replays-grid"></div>
+        </div>
+
+        <!-- CORTES / QUADRAS -->
+        <div id="courts" class="section">
+            <h2>Quadras</h2>
+            <div id="courts-list" class="courts-grid"></div>
+        </div>
+
+        <!-- LISTA DE REPLAYS -->
+        <div id="replays" class="section">
+            <h2>Todos os Replays</h2>
+            <div id="all-replays" class="replays-grid"></div>
+        </div>
+
+        <!-- AJUSTES -->
+        <div id="settings" class="section">
+            <h2>Configurações</h2>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label>Cor de Destaque (Hex)</label>
+                    <input type="text" id="cfg-accent" placeholder="#39ff14">
+                </div>
+                <button class="btn-save" onclick="saveSettings()">Salvar Ajustes</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let stateData = null;
+
+        async function loadState() {
+            try {
+                const res = await fetch('/api/state');
+                stateData = await res.json();
+                renderDashboard();
+                renderCourts();
+                renderReplays();
+            } catch (e) {
+                console.error("Erro ao carregar estado:", e);
+            }
+        }
+
+        function renderDashboard() {
+            document.getElementById('stat-total').innerText = stateData.replays.length;
+            document.getElementById('stat-size').innerText = stateData.mb + ' MB';
+            document.getElementById('stat-courts').innerText = stateData.courts.length;
+            
+            const recent = document.getElementById('recent-replays');
+            recent.innerHTML = stateData.replays.slice(0, 3).map(r => createReplayCard(r)).join('');
+        }
+
+        function renderCourts() {
+            const list = document.getElementById('courts-list');
+            list.innerHTML = stateData.courts.map(c => `
+                <div class="court-card">
+                    <h3>${c.name}</h3>
+                    <p style="color:var(--muted); margin-bottom:15px; font-size:12px;">${c.type.toUpperCase()}</p>
+                    <button class="btn-record" onclick="triggerReplay('${c.id}')">GRAVAR REPLAY</button>
+                </div>
+            `).join('');
+        }
+
+        function renderReplays() {
+            const list = document.getElementById('all-replays');
+            list.innerHTML = stateData.replays.map(r => createReplayCard(r)).join('');
+        }
+
+        function createReplayCard(r) {
+            const date = new Date(r.ts).toLocaleString('pt-BR');
+            return `
+                <div class="replay-card">
+                    <video src="${r.video}" controls></video>
+                    <div class="replay-info">
+                        <span>${r.court} - ${date}</span>
+                        <button class="btn-delete" onclick="deleteReplay('${r.id}')">Excluir</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function triggerReplay(cid) {
+            const btn = event.target;
+            btn.innerText = "GRAVANDO...";
+            btn.style.opacity = "0.5";
+            await fetch(`/api/courts/${cid}/click`, { method: 'POST' });
+            setTimeout(() => { 
+                btn.innerText = "GRAVAR REPLAY"; 
+                btn.style.opacity = "1"; 
+                loadState(); 
+            }, 35000); // 35s de espera (20s antes + 10s depois + processamento)
+        }
+
+        async function deleteReplay(rid) {
+            if(!confirm("Tem certeza que deseja excluir este replay?")) return;
+            await fetch(`/api/replays/${rid}`, { method: 'DELETE' });
+            loadState();
+        }
+
+        async function saveSettings() {
+            const accent = document.getElementById('cfg-accent').value;
+            await fetch('/api/settings', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ cfg: { accent: accent } })
+            });
+            alert("Configurações salvas! Recarregue a página.");
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Carregar ao abrir
+        loadState();
+        // Atualizar a cada 10 segundos
+        setInterval(loadState, 10000);
+    </script>
+</body>
+</html>
