@@ -1,37 +1,31 @@
-name: Build REPLAY .exe
+name: Build EXE
 
-on:
-  push:
+on: push
 
 jobs:
   build:
     runs-on: windows-latest
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-    
-    - name: Create dummy static folder
-      run: |
-        mkdir static
-        echo "<h1>REPLAY Arena</h1><p>Sistema rodando!</p>" > static/index.html
-    
-    - name: Build .exe
-      run: |
-        pyinstaller --onefile --add-data "static;static" --name "ReplayArena" server.py
-    
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ReplayArena-Exe
-        path: dist/ReplayArena.exe
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install
+        run: pip install flask requests pyinstaller
+      
+      - name: Ensure static folder exists
+        run: |
+          if (-not (Test-Path static)) { mkdir static }
+          echo "<h1>REPLAY Arena</h1><p>Sistema rodando!</p>" > static/index.html
+      
+      - name: Build
+        run: pyinstaller --onefile --add-data "static;static" --name ReplayArena server.py
+      
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReplayArena
+          path: dist/ReplayArena.exe
