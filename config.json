@@ -1,0 +1,14 @@
+{
+     "port": 5000,
+     "pre": 20,
+     "post": 10,
+     "device_key": "key_do_botao",
+     "license_url": "https://replay-license.onrender.com",
+     "license_key": "uQYE8XBX9jMWSCKdd6qCCGHz",
+     "cameras": {
+       "society": {
+         "rtsp": "rtsp://admin:Raphael08_@172.20.16.111:554/onvif1"
+       }
+     },
+     "keep_days": 30
+}
